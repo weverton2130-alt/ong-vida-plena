@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ONG Vida Plena</title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <section id="areaLogin">
+    <h2>Login do funcionário</h2>
+    <label for="emailLogin">E-mail:</label>
+<input type="email" id="emailLogin" placeholder="Digite seu e-mail">
+<label for="senhaLogin">Senha:</label>
+<input type="password" id="senhaLogin" placeholder="Digite sua senha">
+<button type="button" id="btnLogin">Entrar</button>
+<button type="button" id="btnLogout" hidden>Sair</button>
+<p id="usuarioAtual"></p>
+</section>
+<main id="painelAdministrativo" hidden>
+<h1> ong vida plena </h1>
+<p>Bem-vindo à ONG Vida Plena! Promovemos inclusão digital, capacitação profissional e ações de saúde para a comunidade </p>
+<h2> eventos </h2>
+<ul id="listaEventos"> 
+    <li>
+        evento piloto
+    </li>
+    <li>oficina de informatica</li>
+    <li>campanha de doações</li>
+</ul>
+     <button type="button" id="btnExcluirEvento">Excluir evento</button>
+
+<form>
+    <label for="nomeEvento">Nome do evento:</label>
+    <input type="text" id="nomeEvento" name="nomeEvento">
+    <button type="button" id="btnCadastrarEvento">Cadastrar evento</button>
+</form>
+<h2> 
+    Beneficiarios atendidos
+</h2>
+<ul id="listaBeneficiarios">
+    <li> Maria Silva</li>
+</ul>
+  <button type="button" id="btnExcluirBeneficiario">Excluir beneficiário</button>
+<form>
+    <label for="nome">Nome do beneficiário:</label>
+    <input type="text" id="nome" name="nome">
+    <label for="idade">Idade:</label>
+<input type="number" id="idade" name="idade" min="0" max="120" required>
+
+<label for="contato">Contato:</label>
+<input type="text" id="contato" name="contato" required>
+
+<label for="regiao">Região:</label>
+<input type="text" id="regiao" name="regiao" required>
+
+    <button type="button" id="btnCadastrar"> Cadastrar Beneficiarios </button>
+
+</form>
+<h2> Historico de participações </h2>
+<ul id="listaHistorico">
+<li> Maria Silva Oficina de informatica </li>
+</ul>
+<form>
+    <label for="nomeParticipante">Beneficiário:</label>
+    <select id="nomeParticipante"></select>
+    <label for="eventoParticipacao">Evento:</label>
+    <select id="eventoParticipacao"></select>
+
+    
+
+    <button type="button" id="btnInscrever">Inscrever beneficiário</button>
+    <button type="button" id="btnCancelarInscricao">Cancelar inscrição</button>
+</form>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+    const supabaseUrl = "https://pijnenznsmkzgiacpzzg.supabase.co";
+    const supabaseKey = "sb_publishable_Oem39SG3KIj7C-9HeFD5SQ_5FjYE2_2";
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+    let usuarioLogado = null;
+    supabaseClient.auth.getUser().then(({ data, error }) => {
+    if (!error && data.user) {
+        usuarioLogado = data.user;
+        usuarioAtual.textContent = "Funcionário conectado: " + usuarioLogado.email;
+        atualizarAreaLogin(true);
+        painelAdministrativo.hidden = false;
+        carregarBeneficiarios();
+        carregarEventos();
+        carregarParticipacoes();
+    }
+});
+    console.log("Supabase inicializado:", supabaseClient !== undefined);
+    const botao = document.getElementById("btnCadastrar");
+    const campoNome = document.getElementById("nome");
+    const lista = document.getElementById("listaBeneficiarios");
+
+    const botaoEvento = document.getElementById("btnCadastrarEvento");
+    const botaoExcluirEvento = document.getElementById("btnExcluirEvento");
+    const botaoExcluirBeneficiario = document.getElementById("btnExcluirBeneficiario");
+    const botaoLogin = document.getElementById("btnLogin");
+    const botaoLogout = document.getElementById("btnLogout");
+    const painelAdministrativo = document.getElementById("painelAdministrativo");
+    const campoEmailLogin = document.getElementById("emailLogin");
+    const campoSenhaLogin = document.getElementById("senhaLogin");
+    const usuarioAtual = document.getElementById("usuarioAtual");
+    function atualizarAreaLogin(conectado) {
+        document.querySelector("#areaLogin h2").textContent =
+    conectado ? "Área do funcionário" : "Login do funcionário";
+    campoEmailLogin.hidden = conectado;
+    campoSenhaLogin.hidden = conectado;
+    botaoLogin.hidden = conectado;
+
+    document.querySelector('label[for="emailLogin"]').hidden = conectado;
+    document.querySelector('label[for="senhaLogin"]').hidden = conectado;
+
+    botaoLogout.hidden = !conectado;
+}
+const campoEvento = document.getElementById("nomeEvento");
+const listaEventos = document.getElementById("listaEventos");
+const campoParticipante = document.getElementById("nomeParticipante");
+const campoParticipacao = document.getElementById("eventoParticipacao");
+const botaoInscrever = document.getElementById("btnInscrever");
+const botaoCancelarInscricao = document.getElementById("btnCancelarInscricao");
+const listaHistorico = document.getElementById("listaHistorico");
+function configurarSelecao(elementoLista) {
+    elementoLista.addEventListener("click", function(event) {
+        const item = event.target.closest("li");
+
+        if (!item || !item.dataset.id) {
+            return;
+        }
+
+        elementoLista.querySelectorAll("li").forEach(function(registro) {
+            registro.classList.remove("selecionado");
+        });
+
+        item.classList.add("selecionado");
+    });
+}
+
+configurarSelecao(listaEventos);
+configurarSelecao(lista);
+async function carregarEventos() {
+    const { data, error } = await supabaseClient
+        .from("eventos")
+        .select("id, nome")
+        .order("nome");
+
+    if (error) {
+        console.error("Erro ao carregar eventos:", error.message);
+        return;
+    }
+
+    listaEventos.innerHTML = "";
+
+    data.forEach(function(evento) {
+        const item = document.createElement("li");
+        item.textContent = evento.nome;
+        item.dataset.id = evento.id;
+        listaEventos.appendChild(item);
+    });
+
+    atualizarSelecoes();
+}
+
+async function carregarParticipacoes() {
+    listaHistorico.innerHTML = "";
+
+    if (!usuarioLogado) {
+        return;
+    }
+
+    const { data, error } = await supabaseClient
+        .from("participacoes")
+        .select("id, beneficiarios(nome), eventos(nome)")
+        .order("criado_em", { ascending: false });
+
+    if (error) {
+        alert("Erro ao carregar participações: " + error.message);
+        return;
+    }
+
+    data.forEach(function(participacao) {
+        const item = document.createElement("li");
+
+        item.textContent =
+            participacao.beneficiarios.nome + " - " +
+            participacao.eventos.nome;
+
+        item.dataset.id = participacao.id;
+        listaHistorico.appendChild(item);
+    });
+}
+
+   async function carregarBeneficiarios() {
+    lista.innerHTML = "";
+    atualizarSelecoes();
+
+    if (!usuarioLogado) {
+        return;
+    }
+
+    const { data, error } = await supabaseClient
+        .from("beneficiarios")
+        .select("id, nome")
+        .order("nome");
+
+    if (error) {
+        alert("Erro ao carregar beneficiários: " + error.message);
+        return;
+    }
+
+    data.forEach(function(beneficiario) {
+        const item = document.createElement("li");
+        item.textContent = beneficiario.nome;
+        item.dataset.id = beneficiario.id;
+        lista.appendChild(item);
+    });
+
+    atualizarSelecoes();
+}
+    function atualizarSelecoes() {
+    campoParticipante.innerHTML = "";
+    campoParticipacao.innerHTML = "";
+
+    lista.querySelectorAll("li").forEach(function(item) {
+        const opcao = document.createElement("option");
+        opcao.value = item.dataset.id;
+        opcao.textContent = item.textContent;
+        campoParticipante.appendChild(opcao);
+    });
+
+    listaEventos.querySelectorAll("li").forEach(function(item) {
+        const opcao = document.createElement("option");
+        opcao.value = item.dataset.id;
+        opcao.textContent = item.textContent;
+        campoParticipacao.appendChild(opcao);
+    });
+}
+
+atualizarSelecoes();
+
+
+
+botao.addEventListener("click", async function() {
+    if (!usuarioLogado) {
+        alert("Faça login para cadastrar beneficiários!");
+        return;
+    }
+
+    const nome = campoNome.value.trim();
+    const idadeTexto = document.getElementById("idade").value.trim();
+const idade = Number(idadeTexto);
+const contato = document.getElementById("contato").value.trim();
+const regiao = document.getElementById("regiao").value.trim();
+
+if (idadeTexto === "" || !Number.isInteger(idade) || idade < 0 || idade > 120) {
+    alert("Informe uma idade válida entre 0 e 120 anos!");
+    return;
+}
+
+if (contato === "" || regiao === "") {
+    alert("Preencha o contato e a região!");
+    return;
+}
+
+
+    if (nome === "") {
+        alert("Digite o nome do beneficiário!");
+        return;
+    }
+
+    const { data, error } = await supabaseClient
+        .from("beneficiarios")
+        .insert({
+            nome: nome,
+            idade: idade,
+            contato: contato,
+            regiao: regiao,
+            criado_por: usuarioLogado.id
+        })
+        .select()
+        .single();
+
+    if (error) {
+        alert("Erro ao cadastrar: " + error.message);
+        return;
+    }
+
+    const novoItem = document.createElement("li");
+    novoItem.textContent = data.nome;
+    novoItem.dataset.id = data.id;
+    lista.appendChild(novoItem);
+
+    atualizarSelecoes();
+    campoNome.value = "";
+    document.getElementById("idade").value = "";
+    document.getElementById("contato").value = "";
+    document.getElementById("regiao").value = "";
+
+    alert("Beneficiário cadastrado com sucesso!");
+});
+
+   botaoEvento.addEventListener("click", async function() {
+    if (!usuarioLogado) {
+        alert("Faça login para cadastrar eventos!");
+        return;
+    }
+
+    const nomeEvento = campoEvento.value.trim();
+
+    if (nomeEvento === "") {
+        alert("Digite o nome do evento!");
+        return;
+    }
+
+    const { error } = await supabaseClient
+        .from("eventos")
+        .insert({
+            nome: nomeEvento,
+            criado_por: usuarioLogado.id
+        });
+
+    if (error) {
+        alert("Erro ao cadastrar evento: " + error.message);
+        return;
+    }
+
+    await carregarEventos();
+
+    campoEvento.value = "";
+
+    alert("Evento cadastrado com sucesso!");
+});
+botaoInscrever.addEventListener("click", async function() {
+    if (!usuarioLogado) {
+        alert("Faça login para realizar inscrições!");
+        return;
+    }
+
+    const participante = campoParticipante.value;
+    const evento = campoParticipacao.value;
+
+    if (!participante || !evento) {
+        alert("Selecione um beneficiário e um evento!");
+        return;
+    }
+
+    const { error } = await supabaseClient
+        .from("participacoes")
+        .insert({
+            beneficiario_id: participante,
+            evento_id: evento,
+            criado_por: usuarioLogado.id
+        });
+
+   if (error) {
+    if (error.code === "23505") {
+        alert("Este beneficiário já está inscrito neste evento!");
+    } else {
+        alert("Erro ao realizar inscrição: " + error.message);
+    }
+    return;
+}
+await carregarParticipacoes();
+    alert("Inscrição realizada com sucesso!");
+});
+botaoCancelarInscricao.addEventListener("click", async function() {
+    if (!usuarioLogado) {
+        alert("Faça login para cancelar inscrições!");
+        return;
+    }
+
+    const participante = campoParticipante.value;
+    const evento = campoParticipacao.value;
+
+    if (!participante || !evento) {
+        alert("Selecione um beneficiário e um evento!");
+        return;
+    }
+
+    if (!confirm("Deseja realmente cancelar esta inscrição?")) {
+        return;
+    }
+
+    const { data, error } = await supabaseClient
+        .from("participacoes")
+        .delete()
+        .eq("beneficiario_id", participante)
+        .eq("evento_id", evento)
+        .select("id");
+
+    if (error) {
+        alert("Erro ao cancelar inscrição: " + error.message);
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        alert("Inscrição não encontrada!");
+        return;
+    }
+
+    await carregarParticipacoes();
+
+    alert("Inscrição cancelada com sucesso!");
+});
+botaoExcluirEvento.addEventListener("click", async function() {
+    if (!usuarioLogado) {
+        alert("Faça login para excluir eventos!");
+        return;
+    }
+
+   const encontrados = listaEventos.querySelectorAll("li.selecionado");
+
+if (encontrados.length !== 1 || !encontrados[0].dataset.id) {
+    alert("Selecione o evento que deseja excluir!");
+    return;
+}
+
+if (!confirm("Deseja realmente excluir o evento " + encontrados[0].textContent + "?")) {
+    return;
+}
+
+    const { data, error } = await supabaseClient
+        .from("eventos")
+        .delete()
+        .eq("id", encontrados[0].dataset.id)
+        .select("id");
+
+    if (error || !data || data.length !== 1) {
+        alert("Não foi possível excluir o evento!");
+        return;
+    }
+
+    await carregarEventos();
+
+    alert("Evento excluído com sucesso!");
+});
+botaoExcluirBeneficiario.addEventListener("click", async function() {
+    if (!usuarioLogado) {
+        alert("Faça login para excluir beneficiários!");
+        return;
+    }
+
+const encontrados = lista.querySelectorAll("li.selecionado");
+
+if (encontrados.length !== 1 || !encontrados[0].dataset.id) {
+    alert("Selecione o beneficiário que deseja excluir!");
+    return;
+}
+
+if (!confirm("Deseja realmente excluir o beneficiário " + encontrados[0].textContent + "?")) {
+    return;
+}
+    const { data, error } = await supabaseClient
+        .from("beneficiarios")
+        .delete()
+        .eq("id", encontrados[0].dataset.id)
+        .select("id");
+
+    if (error || !data || data.length !== 1) {
+        alert("Não foi possível excluir o beneficiário.");
+        return;
+    }
+
+    await carregarBeneficiarios();
+
+    alert("Beneficiário excluído com sucesso!");
+});
+botaoLogin.addEventListener("click", async function() {const email = campoEmailLogin.value.trim();
+const senha = campoSenhaLogin.value;
+if (email === "" || senha === "") {
+    alert("Preencha o e-mail e a senha!");
+    return;
+}
+const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email: email,
+    password: senha
+});
+if (error) {
+    alert("E-mail ou senha incorretos!");
+    return;
+} usuarioLogado = data.user;
+usuarioAtual.textContent = "Funcionário conectado: " + usuarioLogado.email;
+atualizarAreaLogin(true);
+painelAdministrativo.hidden = false;
+alert("Login realizado com sucesso! Bem-vindo, " + data.user.email);
+carregarBeneficiarios();
+carregarEventos();
+carregarParticipacoes();
+
+});
+botaoLogout.addEventListener("click", async function() {
+    const { error } = await supabaseClient.auth.signOut();
+
+    if (error) {
+        alert("Erro ao encerrar a sessão!");
+        return;
+    }
+
+    usuarioLogado = null;
+    usuarioAtual.textContent = "Nenhum funcionário conectado";
+    atualizarAreaLogin(false);
+    painelAdministrativo.hidden = true;
+
+    campoEmailLogin.value = "";
+    campoSenhaLogin.value = "";
+
+    lista.innerHTML = "";
+    listaEventos.innerHTML = "";
+    listaHistorico.innerHTML = "";
+
+    atualizarSelecoes();
+
+    alert("Sessão encerrada com sucesso!");
+});
+</script>
+    </body>
+</html>
