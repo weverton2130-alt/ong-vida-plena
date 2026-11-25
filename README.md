@@ -526,3 +526,32 @@ e elaboração de documentação.
 A aplicação representa um protótipo acadêmico funcional,
 com possibilidades de evolução para atender necessidades
 operacionais mais abrangentes.
+
+## Acesso à aplicação publicada
+
+A aplicação ONG Vida Plena está hospedada no GitHub Pages
+e integrada ao banco de dados PostgreSQL por meio do Supabase.
+
+### Endereço da aplicação
+
+https://weverton2130-alt.github.io/ong-vida-plena/
+
+### Acesso para avaliação acadêmica
+
+Foi criada uma conta exclusiva para o avaliador da UNIFECAF.
+
+- E-mail: avaliador@ongvidaplena.example
+- Senha: disponibilizada na entrega acadêmica.
+
+Por motivos de segurança, a senha não será divulgada
+publicamente neste repositório.
+
+O avaliador poderá testar as funcionalidades de cadastro
+de eventos, cadastro de beneficiários, inscrições,
+cancelamentos e gerenciamento dos registros.
+
+A aplicação utiliza dados fictícios para fins acadêmicos
+e demonstrativos.
+
+Não é necessária a instalação de programas adicionais
+para utilizar a aplicação.
