@@ -428,9 +428,13 @@ if (!confirm("Deseja realmente excluir o evento " + encontrados[0].textContent +
         .select("id");
 
     if (error || !data || data.length !== 1) {
+    if (error?.code === "23503") {
+        alert("Não é possível excluir este evento, pois existem participações vinculadas. Exclua primeiro as participações correspondentes.");
+    } else {
         alert("Não foi possível excluir o evento!");
-        return;
     }
+    return;
+}
 
     await carregarEventos();
 
@@ -458,10 +462,14 @@ if (!confirm("Deseja realmente excluir o beneficiário " + encontrados[0].textCo
         .eq("id", encontrados[0].dataset.id)
         .select("id");
 
-    if (error || !data || data.length !== 1) {
-        alert("Não foi possível excluir o beneficiário.");
-        return;
+  if (error || !data || data.length !== 1) {
+    if (error?.code === "23503") {
+        alert("Não é possível excluir este beneficiário, pois existem participações vinculadas. Exclua primeiro as participações correspondentes.");
+    } else {
+        alert("Não foi possível excluir o beneficiário!");
     }
+    return;
+}
 
     await carregarBeneficiarios();
 
